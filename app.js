@@ -41,6 +41,21 @@ function populateTimePicker(select, startHour, endHour) {
 populateTimePicker(startPicker, 6, 22);
 populateTimePicker(endPicker, 6, 22);
 
+function updateFindPartnersBtn() {
+  const pickersEmpty = !dayPicker.value && !startPicker.value && !endPicker.value;
+  const enabled = slots.length > 0 && pickersEmpty;
+  findPartnersBtn.disabled = !enabled;
+  if (enabled) {
+    console.log('Find Partners button ENABLED (slots:', slots.length, ', pickers empty:', pickersEmpty, ')');
+  } else {
+    console.log('Find Partners button DISABLED (slots:', slots.length, ', pickers empty:', pickersEmpty, ')');
+  }
+}
+
+dayPicker.addEventListener('change', updateFindPartnersBtn);
+startPicker.addEventListener('change', updateFindPartnersBtn);
+endPicker.addEventListener('change', updateFindPartnersBtn);
+
 addSlotBtn.addEventListener('click', function() {
   const day = dayPicker.value;
   const start = startPicker.value;
@@ -63,6 +78,7 @@ addSlotBtn.addEventListener('click', function() {
   dayPicker.value = '';
   startPicker.value = '';
   endPicker.value = '';
+  updateFindPartnersBtn();
 });
 
 function showSlotWarning(msg) {
@@ -86,10 +102,12 @@ function renderSlots() {
     removeBtn.onclick = () => {
       slots.splice(idx, 1);
       renderSlots();
+      updateFindPartnersBtn();
     };
     li.appendChild(removeBtn);
     slotsList.appendChild(li);
   });
+  updateFindPartnersBtn();
 }
 
 availabilityForm.addEventListener('submit', function(e) {
@@ -125,5 +143,10 @@ function showMatches() {
   });
 }
 
+findPartnersBtn.addEventListener('click', function() {
+  console.log('Find Partners button direct click event');
+});
+
 // Initial state
+updateFindPartnersBtn();
 renderSlots(); 
