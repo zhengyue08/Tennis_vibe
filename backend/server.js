@@ -48,6 +48,15 @@ app.get('/api/matches', (req, res) => {
   res.json({ matches });
 });
 
+// Lookup user by name and email
+app.get('/api/users', (req, res) => {
+  const { name, email } = req.query;
+  if (!name || !email) return res.status(400).json({ error: 'Missing fields' });
+  const user = users.find(u => u.name === name && u.email === email);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  res.json({ user });
+});
+
 app.get('/', (req, res) => {
   res.send('Tennis Partner Finder Backend is running!');
 });

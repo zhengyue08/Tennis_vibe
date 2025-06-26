@@ -8,21 +8,38 @@
 </head>
 <body>
   <div class="container">
-    <h1>Tennis Partner Finder</h1>
-    <form id="user-form">
-      <label for="name">Name:</label>
-      <input type="text" id="name" name="name" required>
-      <label for="email">Email:</label>
-      <input type="email" id="email" name="email" required>
-      <label for="skill">Skill Level:</label>
-      <select id="skill" name="skill" required>
+    <!-- Login Form -->
+    <form id="login-form">
+      <h2>Login</h2>
+      <label for="login-name">Name:</label>
+      <input type="text" id="login-name" required>
+      <label for="login-email">Email:</label>
+      <input type="email" id="login-email" required>
+      <button type="submit">Login</button>
+      <button type="button" id="show-signup">Sign Up</button>
+      <div id="login-error" class="error"></div>
+    </form>
+
+    <!-- Sign Up Form -->
+    <form id="signup-form" style="display:none;">
+      <h2>Sign Up</h2>
+      <label for="signup-name">Name:</label>
+      <input type="text" id="signup-name" required>
+      <label for="signup-email">Email:</label>
+      <input type="email" id="signup-email" required>
+      <label for="signup-skill">Skill Level:</label>
+      <select id="signup-skill" required>
         <option value="">Select...</option>
         <option value="Beginner">Beginner</option>
         <option value="Intermediate">Intermediate</option>
         <option value="Advanced">Advanced</option>
       </select>
       <button type="submit">Continue</button>
+      <button type="button" id="show-login">Back to Login</button>
+      <div id="signup-error" class="error"></div>
     </form>
+
+    <!-- Availability Form -->
     <form id="availability-form" style="display:none;">
       <label>Availability (choose day and time):</label>
       <div class="picker-row">
@@ -47,6 +64,8 @@
       <ul id="slots-list"></ul>
       <button type="submit">Find Partners</button>
     </form>
+
+    <!-- Matching Section -->
     <div id="matches" style="display:none;">
       <h2>Matching Partners</h2>
       <ul id="match-list"></ul>

@@ -5,7 +5,10 @@ const API_BASE = 'http://localhost:3000'; // Change to your Render URL after dep
 let currentUser = null;
 let slots = [];
 
-const userForm = document.getElementById('user-form');
+// DOM elements
+const loginForm = document.getElementById('login-form');
+const signupForm = document.getElementById('signup-form');
+const userForm = signupForm; // For compatibility with old code
 const availabilityForm = document.getElementById('availability-form');
 const matchesDiv = document.getElementById('matches');
 const matchList = document.getElementById('match-list');
@@ -15,13 +18,96 @@ const endPicker = document.getElementById('end-picker');
 const addSlotBtn = document.getElementById('add-slot');
 const slotsList = document.getElementById('slots-list');
 const findPartnersBtn = availabilityForm.querySelector('button[type="submit"]');
+const showSignupBtn = document.getElementById('show-signup');
+const showLoginBtn = document.getElementById('show-login');
+const loginError = document.getElementById('login-error');
+const signupError = document.getElementById('signup-error');
 
+function showSection(section) {
+  loginForm.style.display = 'none';
+  signupForm.style.display = 'none';
+  availabilityForm.style.display = 'none';
+  matchesDiv.style.display = 'none';
+  section.style.display = 'block';
+}
+
+// --- API Calls ---
+async function lookupUser(name, email) {
+  const res = await fetch(`${API_BASE}/api/users?name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}`);
+  if (res.ok) return res.json();
+  throw new Error('User not found');
+}
+async function registerUser(name, email, skill) {
+  const res = await fetch(`${API_BASE}/api/users`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, skill })
+  });
+  return res.json();
+}
+async function addAvailability(email, slots) {
+  const res = await fetch(`${API_BASE}/api/availability`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, slots })
+  });
+  return res.json();
+}
+async function getMatches(email) {
+  const res = await fetch(`${API_BASE}/api/matches?email=${encodeURIComponent(email)}`);
+  return res.json();
+}
+
+// --- Login Flow ---
+loginForm.addEventListener('submit', async function(e) {
+  e.preventDefault();
+  loginError.textContent = '';
+  const name = document.getElementById('login-name').value.trim();
+  const email = document.getElementById('login-email').value.trim();
+  if (!name || !email) return;
+  try {
+    const result = await lookupUser(name, email);
+    currentUser = result.user;
+    // Go directly to matching page
+    const matchResult = await getMatches(currentUser.email);
+    showMatches(matchResult.matches);
+    showSection(matchesDiv);
+  } catch (err) {
+    loginError.textContent = 'User not found. Please sign up.';
+  }
+});
+
+// --- Sign Up Flow ---
+showSignupBtn.addEventListener('click', () => {
+  signupError.textContent = '';
+  showSection(signupForm);
+});
+showLoginBtn.addEventListener('click', () => {
+  loginError.textContent = '';
+  showSection(loginForm);
+});
+signupForm.addEventListener('submit', async function(e) {
+  e.preventDefault();
+  signupError.textContent = '';
+  const name = document.getElementById('signup-name').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const skill = document.getElementById('signup-skill').value;
+  if (!name || !email || !skill) return;
+  const result = await registerUser(name, email, skill);
+  if (result.success) {
+    currentUser = { name, email, skill };
+    showSection(availabilityForm);
+  } else {
+    signupError.textContent = result.error || 'Registration failed';
+  }
+});
+
+// --- Availability & Matching (as before) ---
 function updateFindPartnersBtn() {
   const pickersEmpty = !dayPicker.value && !startPicker.value && !endPicker.value;
   const enabled = slots.length > 0 && pickersEmpty;
   findPartnersBtn.disabled = !enabled;
 }
-
 dayPicker.addEventListener('change', updateFindPartnersBtn);
 startPicker.addEventListener('change', updateFindPartnersBtn);
 endPicker.addEventListener('change', updateFindPartnersBtn);
@@ -64,7 +150,6 @@ addSlotBtn.addEventListener('click', function() {
   endPicker.value = '';
   updateFindPartnersBtn();
 });
-
 function showSlotWarning(msg) {
   let warning = document.createElement('div');
   warning.id = 'slot-warning';
@@ -74,7 +159,6 @@ function showSlotWarning(msg) {
   warning.style.fontSize = '0.98em';
   addSlotBtn.parentNode.insertBefore(warning, addSlotBtn.nextSibling);
 }
-
 function renderSlots() {
   slotsList.innerHTML = '';
   slots.forEach((slot, idx) => {
@@ -93,60 +177,16 @@ function renderSlots() {
   });
   updateFindPartnersBtn();
 }
-
-// --- API Calls ---
-async function registerUser(name, email, skill) {
-  const res = await fetch(`${API_BASE}/api/users`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, email, skill })
-  });
-  return res.json();
-}
-
-async function addAvailability(email, slots) {
-  const res = await fetch(`${API_BASE}/api/availability`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, slots })
-  });
-  return res.json();
-}
-
-async function getMatches(email) {
-  const res = await fetch(`${API_BASE}/api/matches?email=${encodeURIComponent(email)}`);
-  return res.json();
-}
-
-// --- UI Flow ---
-userForm.addEventListener('submit', async function(e) {
-  e.preventDefault();
-  const name = document.getElementById('name').value.trim();
-  const email = document.getElementById('email').value.trim();
-  const skill = document.getElementById('skill').value;
-  if (!name || !email || !skill) return;
-  const result = await registerUser(name, email, skill);
-  if (result.success) {
-    currentUser = { name, email, skill };
-    userForm.style.display = 'none';
-    availabilityForm.style.display = 'block';
-  } else {
-    alert(result.error || 'Registration failed');
-  }
-});
-
 availabilityForm.addEventListener('submit', async function(e) {
   e.preventDefault();
   if (slots.length === 0) return;
   await addAvailability(currentUser.email, slots);
   const matchResult = await getMatches(currentUser.email);
   showMatches(matchResult.matches);
-  availabilityForm.style.display = 'none';
-  matchesDiv.style.display = 'block';
+  showSection(matchesDiv);
   slots = [];
   renderSlots();
 });
-
 function showMatches(matches) {
   matchList.innerHTML = '';
   if (!matches || matches.length === 0) {
@@ -161,5 +201,6 @@ function showMatches(matches) {
 }
 
 // Initial state
+showSection(loginForm);
 updateFindPartnersBtn();
 renderSlots(); 
