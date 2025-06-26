@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tennis Partner Finder</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Tennis Partner Finder</h1>
+    <form id="user-form">
+      <label for="name">Name:</label>
+      <input type="text" id="name" name="name" required>
+      <label for="email">Email:</label>
+      <input type="email" id="email" name="email" required>
+      <label for="skill">Skill Level:</label>
+      <select id="skill" name="skill" required>
+        <option value="">Select...</option>
+        <option value="Beginner">Beginner</option>
+        <option value="Intermediate">Intermediate</option>
+        <option value="Advanced">Advanced</option>
+      </select>
+      <button type="submit">Continue</button>
+    </form>
+    <form id="availability-form" style="display:none;">
+      <label>Availability (choose day and time):</label>
+      <div class="picker-row">
+        <select id="day-picker" required>
+          <option value="">Day...</option>
+          <option value="Monday">Monday</option>
+          <option value="Tuesday">Tuesday</option>
+          <option value="Wednesday">Wednesday</option>
+          <option value="Thursday">Thursday</option>
+          <option value="Friday">Friday</option>
+          <option value="Saturday">Saturday</option>
+          <option value="Sunday">Sunday</option>
+        </select>
+        <select id="start-picker" required>
+          <option value="">Start...</option>
+        </select>
+        <select id="end-picker" required>
+          <option value="">End...</option>
+        </select>
+      </div>
+      <button type="button" id="add-slot">Add Slot</button>
+      <ul id="slots-list"></ul>
+      <button type="submit">Find Partners</button>
+    </form>
+    <div id="matches" style="display:none;">
+      <h2>Matching Partners</h2>
+      <ul id="match-list"></ul>
+    </div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html> 
