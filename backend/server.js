@@ -7,6 +7,9 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+app.get('/api/debug/users', (req, res) => {
+  res.json({ users });
+}); 
 // In-memory storage
 const users = []; // { name, email, skill, availability: [] }
 

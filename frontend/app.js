@@ -1,6 +1,9 @@
-// In-memory storage for users
-const users = [];
+// Tennis Partner Finder Frontend (API version)
+
+const API_BASE = 'http://localhost:3000'; // Change to your Render URL after deployment
+
 let currentUser = null;
+let slots = [];
 
 const userForm = document.getElementById('user-form');
 const availabilityForm = document.getElementById('availability-form');
@@ -11,22 +14,18 @@ const startPicker = document.getElementById('start-picker');
 const endPicker = document.getElementById('end-picker');
 const addSlotBtn = document.getElementById('add-slot');
 const slotsList = document.getElementById('slots-list');
-let slots = [];
-
 const findPartnersBtn = availabilityForm.querySelector('button[type="submit"]');
 
-userForm.addEventListener('submit', function(e) {
-  e.preventDefault();
-  const name = document.getElementById('name').value.trim();
-  const email = document.getElementById('email').value.trim();
-  const skill = document.getElementById('skill').value;
-  if (!name || !email || !skill) return;
-  currentUser = { name, email, skill, availability: [] };
-  userForm.style.display = 'none';
-  availabilityForm.style.display = 'block';
-});
+function updateFindPartnersBtn() {
+  const pickersEmpty = !dayPicker.value && !startPicker.value && !endPicker.value;
+  const enabled = slots.length > 0 && pickersEmpty;
+  findPartnersBtn.disabled = !enabled;
+}
 
-// Populate time pickers (e.g., 06:00 to 22:00, every 30 min)
+dayPicker.addEventListener('change', updateFindPartnersBtn);
+startPicker.addEventListener('change', updateFindPartnersBtn);
+endPicker.addEventListener('change', updateFindPartnersBtn);
+
 function populateTimePicker(select, startHour, endHour) {
   select.innerHTML = '<option value="">'+(select.id==='start-picker'?'Start...':'End...')+'</option>';
   for (let h = startHour; h <= endHour; h++) {
@@ -40,21 +39,6 @@ function populateTimePicker(select, startHour, endHour) {
 }
 populateTimePicker(startPicker, 6, 22);
 populateTimePicker(endPicker, 6, 22);
-
-function updateFindPartnersBtn() {
-  const pickersEmpty = !dayPicker.value && !startPicker.value && !endPicker.value;
-  const enabled = slots.length > 0 && pickersEmpty;
-  findPartnersBtn.disabled = !enabled;
-  if (enabled) {
-    console.log('Find Partners button ENABLED (slots:', slots.length, ', pickers empty:', pickersEmpty, ')');
-  } else {
-    console.log('Find Partners button DISABLED (slots:', slots.length, ', pickers empty:', pickersEmpty, ')');
-  }
-}
-
-dayPicker.addEventListener('change', updateFindPartnersBtn);
-startPicker.addEventListener('change', updateFindPartnersBtn);
-endPicker.addEventListener('change', updateFindPartnersBtn);
 
 addSlotBtn.addEventListener('click', function() {
   const day = dayPicker.value;
@@ -110,29 +94,62 @@ function renderSlots() {
   updateFindPartnersBtn();
 }
 
-availabilityForm.addEventListener('submit', function(e) {
+// --- API Calls ---
+async function registerUser(name, email, skill) {
+  const res = await fetch(`${API_BASE}/api/users`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, skill })
+  });
+  return res.json();
+}
+
+async function addAvailability(email, slots) {
+  const res = await fetch(`${API_BASE}/api/availability`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, slots })
+  });
+  return res.json();
+}
+
+async function getMatches(email) {
+  const res = await fetch(`${API_BASE}/api/matches?email=${encodeURIComponent(email)}`);
+  return res.json();
+}
+
+// --- UI Flow ---
+userForm.addEventListener('submit', async function(e) {
   e.preventDefault();
-  console.log('Find Partners button clicked');
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const skill = document.getElementById('skill').value;
+  if (!name || !email || !skill) return;
+  const result = await registerUser(name, email, skill);
+  if (result.success) {
+    currentUser = { name, email, skill };
+    userForm.style.display = 'none';
+    availabilityForm.style.display = 'block';
+  } else {
+    alert(result.error || 'Registration failed');
+  }
+});
+
+availabilityForm.addEventListener('submit', async function(e) {
+  e.preventDefault();
   if (slots.length === 0) return;
-  currentUser.availability = [...slots];
-  users.push(currentUser);
-  showMatches();
+  await addAvailability(currentUser.email, slots);
+  const matchResult = await getMatches(currentUser.email);
+  showMatches(matchResult.matches);
   availabilityForm.style.display = 'none';
   matchesDiv.style.display = 'block';
   slots = [];
   renderSlots();
 });
 
-function showMatches() {
+function showMatches(matches) {
   matchList.innerHTML = '';
-  if (!currentUser) return;
-  // Find users with same skill and overlapping availability, excluding self
-  const matches = users.filter(u =>
-    u !== currentUser &&
-    u.skill === currentUser.skill &&
-    u.availability.some(slot => currentUser.availability.includes(slot))
-  );
-  if (matches.length === 0) {
+  if (!matches || matches.length === 0) {
     matchList.innerHTML = '<li>No matching partners found.</li>';
     return;
   }
@@ -142,10 +159,6 @@ function showMatches() {
     matchList.appendChild(li);
   });
 }
-
-findPartnersBtn.addEventListener('click', function() {
-  console.log('Find Partners button direct click event');
-});
 
 // Initial state
 updateFindPartnersBtn();
