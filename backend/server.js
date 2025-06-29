@@ -36,15 +36,50 @@ app.post('/api/availability', (req, res) => {
   res.json({ success: true });
 });
 
+function parseSlot(slot) {
+  // Example slot: "Monday 09:00-10:00"
+  const [day, time] = slot.split(' ');
+  const [start, end] = time.split('-');
+  return { day, start, end };
+}
+
+function getOverlap(slotA, slotB) {
+  if (slotA.day !== slotB.day) return null;
+  const start = slotA.start > slotB.start ? slotA.start : slotB.start;
+  const end = slotA.end < slotB.end ? slotA.end : slotB.end;
+  if (start < end) return { day: slotA.day, start, end };
+  return null;
+}
+
 app.get('/api/matches', (req, res) => {
   const { email } = req.query;
   const user = users.find(u => u.email === email);
   if (!user) return res.status(404).json({ error: 'User not found' });
-  const matches = users.filter(u =>
-    u.email !== user.email &&
-    u.skill === user.skill &&
-    u.availability.some(slot => user.availability.includes(slot))
-  );
+
+  const matches = [];
+
+  users.forEach(u => {
+    if (u.email === user.email || u.skill !== user.skill) return;
+    const overlaps = [];
+    user.availability.forEach(slotA => {
+      const parsedA = parseSlot(slotA);
+      u.availability.forEach(slotB => {
+        const parsedB = parseSlot(slotB);
+        const overlap = getOverlap(parsedA, parsedB);
+        if (overlap) {
+          overlaps.push(`${overlap.day} ${overlap.start}-${overlap.end}`);
+        }
+      });
+    });
+    if (overlaps.length > 0) {
+      matches.push({
+        name: u.name,
+        email: u.email,
+        overlaps
+      });
+    }
+  });
+
   res.json({ matches });
 });
 

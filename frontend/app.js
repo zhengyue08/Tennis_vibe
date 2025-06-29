@@ -1,6 +1,7 @@
 // Tennis Partner Finder Frontend (API version)
 
-const API_BASE = 'https://tennis-vibe.onrender.com'; // Change to your Render URL after deployment
+// const API_BASE = 'https://tennis-vibe.onrender.com'; // Change to your Render URL after deployment
+const API_BASE = 'http://localhost:3000';
 
 let currentUser = null;
 let slots = [];
@@ -22,6 +23,7 @@ const showSignupBtn = document.getElementById('show-signup');
 const showLoginBtn = document.getElementById('show-login');
 const loginError = document.getElementById('login-error');
 const signupError = document.getElementById('signup-error');
+const addAvailabilityBtn = document.getElementById('add-availability-btn');
 
 function showSection(section) {
   loginForm.style.display = 'none';
@@ -58,6 +60,16 @@ async function getMatches(email) {
   return res.json();
 }
 
+async function fetchCurrentAvailability() {
+  if (!currentUser) return;
+  const res = await fetch(`${API_BASE}/api/users?name=${encodeURIComponent(currentUser.name)}&email=${encodeURIComponent(currentUser.email)}`);
+  if (res.ok) {
+    const data = await res.json();
+    slots = Array.isArray(data.user.availability) ? [...data.user.availability] : [];
+    renderSlots();
+  }
+}
+
 // --- Login Flow ---
 loginForm.addEventListener('submit', async function(e) {
   e.preventDefault();
@@ -80,6 +92,9 @@ loginForm.addEventListener('submit', async function(e) {
 // --- Sign Up Flow ---
 showSignupBtn.addEventListener('click', () => {
   signupError.textContent = '';
+  // Copy login values to signup fields
+  document.getElementById('signup-name').value = document.getElementById('login-name').value;
+  document.getElementById('signup-email').value = document.getElementById('login-email').value;
   showSection(signupForm);
 });
 showLoginBtn.addEventListener('click', () => {
@@ -184,7 +199,6 @@ availabilityForm.addEventListener('submit', async function(e) {
   const matchResult = await getMatches(currentUser.email);
   showMatches(matchResult.matches);
   showSection(matchesDiv);
-  slots = [];
   renderSlots();
 });
 function showMatches(matches) {
@@ -195,7 +209,8 @@ function showMatches(matches) {
   }
   matches.forEach(u => {
     const li = document.createElement('li');
-    li.textContent = `${u.name} (${u.email})`;
+    li.innerHTML = `<strong>${u.name}</strong> (${u.email})<br>
+      <span>Overlapping time(s):<br>${u.overlaps.map(t => `<span>${t}</span>`).join('<br>')}</span>`;
     matchList.appendChild(li);
   });
 }
@@ -203,4 +218,11 @@ function showMatches(matches) {
 // Initial state
 showSection(loginForm);
 updateFindPartnersBtn();
-renderSlots(); 
+renderSlots();
+
+if (addAvailabilityBtn) {
+  addAvailabilityBtn.addEventListener('click', async () => {
+    await fetchCurrentAvailability();
+    showSection(availabilityForm);
+  });
+} 
