@@ -1,7 +1,7 @@
 // Tennis Partner Finder Frontend (API version)
 
-const API_BASE = 'https://tennis-vibe.onrender.com'; // Change to your Render URL after deployment
-// const API_BASE = 'http://localhost:3000';
+// const API_BASE = 'https://tennis-vibe.onrender.com'; // Change to your Render URL after deployment
+const API_BASE = 'http://localhost:3000';
 
 let currentUser = null;
 let slots = [];

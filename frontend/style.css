@@ -5,6 +5,7 @@ body {
   padding: 0;
 }
 .container {
+  position: relative;
   max-width: 400px;
   margin: 40px auto;
   background: #fff;
@@ -113,4 +114,18 @@ button:hover {
   font-size: 1em;
   cursor: pointer;
   margin-left: 8px;
+}
+.logo {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 10;
+}
+@media (max-width: 600px) {
+  .logo {
+    top: 8px;
+    left: 8px;
+    width: 32px;
+    height: 32px;
+  }
 } 
